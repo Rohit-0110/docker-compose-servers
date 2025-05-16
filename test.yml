@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  server:
+    image: vishwakarmarohit750/hr-horilla
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+    ports:
+      - "8000:8000"  # Maps container's port 8000 to host's port 8000
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/horilla"
+    command: ./entrypoint.sh
+    depends_on:
+      - db:
+    networks:
+      - horilla-network
+
+  db:
+    image: postgres:16-bullseye
+    environment:
+      POSTGRES_DB: horilla
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"  # Exposes port for external database connections if necessary
+    volumes:
+      - horilla-data:/var/lib/postgresql/data
+    networks:
+      - horilla-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  horilla-data:
+
+networks:
+  horilla-network:
+    driver: overlay
+    
